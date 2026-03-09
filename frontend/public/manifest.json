@@ -1,0 +1,20 @@
+{
+  "name": "MedVerify",
+  "short_name": "MedVerify",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon_img.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon_img.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
