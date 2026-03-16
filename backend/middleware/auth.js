@@ -19,9 +19,9 @@ const protect=async(req,res,next)=>{
         const decoded=jwt.verify(token,process.env.JWT_SECRET);
         //Find user by id and role
         if(decoded.role==='doctor'){
-            req.user=await Ngo.findById(decoded.id).select('-password');
-        }else{
             req.user=await Doctor.findById(decoded.id).select('-password');
+        }else{
+            req.user=await Ngo.findById(decoded.id).select('-password');
         }
     
      req.user.role = decoded.role;
