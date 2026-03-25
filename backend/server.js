@@ -6,16 +6,21 @@ const cors = require("cors");
 const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
-
+const medicineRoutes = require("./routes/medicineRoutes");
+const stockRoutes = require("./routes/stockRoutes");
+const campRoutes = require("./routes/campRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 const app = express();
 
 connectDB();
 
 app.use(cors());
 app.use(express.json());
-
 app.use("/api/auth",authRoutes);
-
+app.use("/api/medicines",medicineRoutes);
+app.use("/api/stocks",stockRoutes);
+app.use("/api/camps",campRoutes);
+app.use("/api/reports",reportRoutes);
 app.get("/",(req,res)=>{
   res.send("MedVerify API Running");
 });

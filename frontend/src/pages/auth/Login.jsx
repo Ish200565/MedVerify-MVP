@@ -37,7 +37,7 @@ export default function Login() {
       localStorage.setItem("role", role);
 
       if (role === "ngo") {
-        navigate("/ngo/dashboard");
+        navigate("/ngo/medicine");
       } else {
         navigate("/doctor/dashboard");
       }

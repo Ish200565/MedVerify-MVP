@@ -98,3 +98,24 @@ exports.getMe = async (req,res)=>{
   res.json({success:true,data:req.user});
 
 };
+
+exports.getDoctors = async (req, res) => {
+   try {
+    
+    const doctors = await Doctor.find()
+      .populate("ngo", "name email"); // optional: populate NGO details
+
+    res.status(200).json({
+      success: true,
+      count: doctors.length,
+      data: doctors
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching doctors",
+      error: error.message
+    });
+  }
+};

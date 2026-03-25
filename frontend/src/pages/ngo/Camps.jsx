@@ -1,163 +1,195 @@
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react";
+import API from "../../services/api";
+import { Menu } from "lucide-react";
+import Sidebar from "../../components/layout/Sidebar";
+export default function Camps() {
+  const [upcoming, setUpcoming] = useState([]);
+  const [completed, setCompleted] = useState([]);
+  const [open, setOpen] = useState(false);
+  /* ✅ DUMMY REPORTS */
+  const reports = [
+    {
+      _id: "1",
+      campName: "Free Health Camp",
+      location: "Andheri West",
+      doctorAssigned: "Dr. Sharma",
+      totalPeople: 120,
+      minorCases: 90,
+      majorCases: 30,
+      successRate: 90,
+      doctorReport:
+        "Most patients had minor illnesses and were treated successfully.",
+    },
+  ];
 
-export default function Camps(){
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-const [activeTab,setActiveTab] = useState("schedule")
+  const fetchData = async () => {
+    try {
+      const up = await API.get("/camps/upcoming");
+      const comp = await API.get("/camps/completed");
 
-const upcoming = [
-{ name:"Rural Health Camp", location:"Rampur Village", date:"10 Apr 2026", doctors:3 },
-{ name:"Eye Checkup Camp", location:"Govt School", date:"14 Apr 2026", doctors:2 },
-{ name:"Women Wellness Camp", location:"Community Hall", date:"18 Apr 2026", doctors:4 },
-{ name:"Cardiac Screening", location:"City Center", date:"22 Apr 2026", doctors:2 },
-{ name:"General Health Camp", location:"Village Panchayat", date:"28 Apr 2026", doctors:3 }
-]
+      setUpcoming(up.data.data || []);
+      setCompleted(comp.data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-const history = [
-{ name:"Diabetes Camp", patients:150, critical:18, success:"88%" },
-{ name:"Eye Surgery Camp", patients:80, critical:22, success:"93%" },
-{ name:"Child Health Camp", patients:120, critical:5, success:"96%" },
-{ name:"Orthopedic Camp", patients:95, critical:12, success:"91%" },
-{ name:"Skin Disease Camp", patients:110, critical:9, success:"94%" }
-]
+  return (
+    
+<div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
 
-return(
+      {/* SIDEBAR */}
+      <Sidebar open={open} setOpen={setOpen} />
 
-<div className="space-y-8">
+      {/* TOPBAR */}
+      <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
+        <div className="flex items-center gap-3">
+          <Menu className="cursor-pointer" onClick={() => setOpen(true)} />
+          <h2 className="text-lg font-semibold">Camps</h2>
+        </div>
 
-<h1 className="text-3xl font-bold">
-Camps Management
-</h1>
+      </div>
+      {/* ================= UPCOMING ================= */}
+      <div className="bg-white border rounded-xl m-5 shadow p-5">
+        <h2 className="text-lg font-semibold mb-4">Upcoming Camps</h2>
 
-{/* Tabs */}
+        <div className="overflow-x-auto">
+          <table className="w-full border rounded-lg overflow-hidden">
 
-<div className="flex gap-4 border-b pb-2">
+            <thead className="bg-green-100 text-left text-sm">
+              <tr>
+                <th className="p-3 border">Camp Name</th>
+                <th className="p-3 border">Location</th>
+                <th className="p-3 border">Date</th>
+                <th className="p-3 border">Medicines</th>
+              </tr>
+            </thead>
 
-<button
-onClick={()=>setActiveTab("schedule")}
-className={`px-4 py-2 rounded-t ${activeTab==="schedule" ? "bg-blue-600 text-white" : "bg-gray-100"}`}
->
-Schedule Camp
-</button>
+            <tbody>
+              {upcoming.map((camp) => (
+                <tr key={camp._id} className="hover:bg-gray-50 text-sm">
 
-<button
-onClick={()=>setActiveTab("upcoming")}
-className={`px-4 py-2 rounded-t ${activeTab==="upcoming" ? "bg-blue-600 text-white" : "bg-gray-100"}`}
->
-Upcoming Camps
-</button>
+                  <td className="p-3 border font-medium">
+                    {camp.nameOfCamp}
+                  </td>
 
-<button
-onClick={()=>setActiveTab("history")}
-className={`px-4 py-2 rounded-t ${activeTab==="history" ? "bg-blue-600 text-white" : "bg-gray-100"}`}
->
-Camp History
-</button>
+                  <td className="p-3 border">{camp.location}</td>
 
-</div>
+                  <td className="p-3 border">
+                    {new Date(camp.date).toDateString()}
+                  </td>
 
-{/* Schedule Camp */}
+                  <td className="p-3 border">
+                    {camp.medicines?.map((m, i) => (
+                      <span
+                        key={i}
+                        className="inline-block bg-green-100 text-green-700 px-2 py-1 rounded mr-1 text-xs"
+                      >
+                        {m.medicine?.name}
+                      </span>
+                    ))}
+                  </td>
 
-{activeTab==="schedule" && (
+                </tr>
+              ))}
+            </tbody>
 
-<Card>
+          </table>
+        </div>
+      </div>
 
-<CardContent className="p-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* ================= COMPLETED ================= */}
+      <div className="bg-white border m-5 rounded-xl shadow p-5">
+        <h2 className="text-lg font-semibold mb-4">Completed Camps</h2>
 
-<Input placeholder="Camp Name"/>
-<Input placeholder="Location"/>
-<Input type="date"/>
+        <div className="grid md:grid-cols-2 gap-4">
 
-<Input placeholder="Assign Doctors"/>
-<Input placeholder="Medicines from Inventory"/>
+          {completed.map((camp) => (
+            <div
+              key={camp._id}
+              className="border rounded-xl p-4 shadow hover:shadow-md transition bg-white"
+            >
+              <h3 className="font-semibold text-lg">
+                {camp.nameOfCamp}
+              </h3>
 
-<Button className="lg:col-span-3">
-Create Camp
-</Button>
+              <p className="text-sm text-gray-500">
+                📍 {camp.location}
+              </p>
 
-</CardContent>
+              <p className="text-xs text-gray-400">
+                {new Date(camp.date).toDateString()}
+              </p>
 
-</Card>
+              <div className="mt-2 text-xs text-green-600 font-medium">
+                ✔ Completed
+              </div>
+            </div>
+          ))}
 
-)}
+        </div>
+      </div>
 
-{/* Upcoming Camps */}
+      {/* ================= REPORTS ================= */}
+      <div className="bg-white m-5 border rounded-xl shadow p-5">
+        <h2 className="text-lg font-semibold mb-4">Reports</h2>
 
-{activeTab==="upcoming" && (
+        <div className="overflow-x-auto">
+          <table className="w-full border rounded-lg overflow-hidden">
 
-<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <thead className="bg-green-100 text-sm">
+              <tr>
+                <th className="p-3 border">Camp</th>
+                <th className="p-3 border">Doctor</th>
+                <th className="p-3 border">Total</th>
+                <th className="p-3 border">Minor</th>
+                <th className="p-3 border">Major</th>
+                <th className="p-3 border">Success</th>
+              </tr>
+            </thead>
 
-{upcoming.map((camp,i)=>(
+            <tbody>
+              {reports.map((rep) => (
+                <tr key={rep._id} className="hover:bg-gray-50 text-sm">
 
-<Card key={i} className="hover:shadow-xl transition">
+                  <td className="p-3 border font-medium">
+                    {rep.campName}
+                  </td>
 
-<CardContent className="p-6 space-y-2">
+                  <td className="p-3 border">
+                    {rep.doctorAssigned}
+                  </td>
 
-<h3 className="text-lg font-semibold">
-{camp.name}
-</h3>
+                  <td className="p-3 border">
+                    {rep.totalPeople}
+                  </td>
 
-<p className="text-sm text-gray-500">
-{camp.location}
-</p>
+                  <td className="p-3 border text-green-600 font-medium">
+                    {rep.minorCases}
+                  </td>
 
-<p className="text-sm">
-Date: {camp.date}
-</p>
+                  <td className="p-3 border text-red-500 font-medium">
+                    {rep.majorCases}
+                  </td>
 
-<Badge>
-{camp.doctors} Doctors Assigned
-</Badge>
+                  <td className="p-3 border">
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">
+                      {rep.successRate}%
+                    </span>
+                  </td>
 
-</CardContent>
+                </tr>
+              ))}
+            </tbody>
 
-</Card>
+          </table>
+        </div>
+      </div>
 
-))}
-
-</div>
-
-)}
-
-{/* Camp History */}
-
-{activeTab==="history" && (
-
-<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-{history.map((camp,i)=>(
-
-<Card key={i} className="hover:shadow-xl transition">
-
-<CardContent className="p-6 space-y-2">
-
-<h3 className="text-lg font-semibold">
-{camp.name}
-</h3>
-
-<p>Patients Checked: {camp.patients}</p>
-
-<p>Critical Cases: {camp.critical}</p>
-
-<Badge variant="secondary">
-Success Rate {camp.success}
-</Badge>
-
-</CardContent>
-
-</Card>
-
-))}
-
-</div>
-
-)}
-
-</div>
-
-)
-
+    </div>
+  );
 }

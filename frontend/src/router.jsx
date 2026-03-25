@@ -3,15 +3,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import Home from "./pages/landing/Home"
 import Login from "./pages/auth/Login"
 import Signup from "./pages/auth/Signup"
-
-import DashboardLayout from "./components/layout/DashboardLayout"
-
-import NgoDashboard from "./pages/ngo/NgoDashboard"
-import MedicineInventory from "./pages/ngo/MedicineInventory"
-import Camps from "./pages/ngo/Camps"
 import Doctors from "./pages/ngo/Doctors"
-import Inbox from "./pages/ngo/Inbox"
-
+import AddMedicine from "./pages/ngo/AddMedicines"
+import MedicineDashboard from "./pages/ngo/MedicineDashboard"
+import AddCamp from "./pages/ngo/AddCamp"
+import DoctorDashboard from "./pages/doctors/DoctorDashboard" 
+import Camps from "./pages/ngo/Camps"
 export default function Router() {
   return (
     <BrowserRouter>
@@ -21,17 +18,12 @@ export default function Router() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-
-        <Route path="/ngo" element={<DashboardLayout />}>
-
-          <Route index element={<NgoDashboard />} />
-          <Route path="inventory" element={<MedicineInventory />} />
-          <Route path="camps" element={<Camps />} />
-          <Route path="doctors" element={<Doctors />} />
-          <Route path="inbox" element={<Inbox />} />
-
-        </Route>
-
+        <Route path="/ngo/doctors" element={<Doctors />} />
+        <Route path="/ngo/medicine" element={<MedicineDashboard/>} />
+        <Route path="/ngo/add-medicine" element={<AddMedicine/>} />
+        <Route path="/ngo/camps" element={<AddCamp/>} />
+        <Route path="/doctor/dashboard" element={<DoctorDashboard/>} />
+        <Route path="/ngo/show-camps" element={<Camps/>} />
       </Routes>
 
     </BrowserRouter>
