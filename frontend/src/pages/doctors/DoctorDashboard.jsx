@@ -1,79 +1,64 @@
 import { useEffect, useState } from "react";
 import API from "../../services/api";
-import { Button } from "../../components/ui/button";
 import Logout from "../../components/layout/Logout";
 import {
   CalendarDays,
   Clock,
   MapPin,
   Users,
-  Tent,
-  CheckCircle2,
   X,
 } from "lucide-react";
 
-/* ── tiny inline donut chart (SVG) ─────────────────────── */
-function DonutChart({ major = 14, minor = 114 }) {
-  const total = major + minor;
+/* ── Donut chart driven by real data ───────────────────────── */
+function DonutChart({ major = 0, minor = 0 }) {
+  const total = major + minor || 1;
   const r = 38;
   const circ = 2 * Math.PI * r;
   const majorArc = (major / total) * circ;
   const minorArc = (minor / total) * circ;
   return (
     <svg viewBox="0 0 100 100" className="w-20 h-20">
-      {/* minor (blue) */}
       <circle cx="50" cy="50" r={r} fill="none" stroke="#3b82f6" strokeWidth="16"
         strokeDasharray={`${minorArc} ${circ - minorArc}`}
         strokeDashoffset={circ * 0.25} />
-      {/* major (orange) */}
       <circle cx="50" cy="50" r={r} fill="none" stroke="#f97316" strokeWidth="16"
         strokeDasharray={`${majorArc} ${circ - majorArc}`}
         strokeDashoffset={circ * 0.25 - minorArc} />
-      {/* severity slice (red, small) */}
-      <circle cx="50" cy="50" r={r} fill="none" stroke="#ef4444" strokeWidth="16"
-        strokeDasharray={`${circ * 0.06} ${circ * 0.94}`}
-        strokeDashoffset={circ * 0.25 - minorArc - majorArc} />
       <circle cx="50" cy="50" r="26" fill="white" />
     </svg>
   );
 }
 
-/* ── tiny inline bar chart (SVG) ───────────────────────── */
-function BarChart() {
-  const bars = [
-    { label: "Bek", blue: 30, orange: 20 },
-    { label: "Minor", blue: 50, orange: 35 },
-    { label: "Minor", blue: 40, orange: 50 },
-    { label: "Hnt", blue: 25, orange: 15 },
-  ];
-  return (
-    <div className="flex items-end gap-1.5">
-      {bars.map((b, i) => (
-        <div key={i} className="flex flex-col items-center gap-0.5">
-          <div className="flex items-end gap-0.5">
-            <div className="w-3 rounded-t-sm bg-blue-500" style={{ height: b.blue * 0.7 + "px" }} />
-            <div className="w-3 rounded-t-sm bg-orange-400" style={{ height: b.orange * 0.7 + "px" }} />
-          </div>
-          <span className="text-[9px] text-gray-400">{b.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+/* ── Real calendar: highlights upcoming camp dates ──────────── */
+function MiniCalendar({ upcomingCamps = [] }) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
 
-/* ── tiny calendar widget ───────────────────────────────── */
-function MiniCalendar() {
-  const days = ["S","M","T","W","T","F","S"];
-  const cells = Array.from({ length: 35 }, (_, i) => {
-    const d = i - 3;
-    return d > 0 && d <= 31 ? d : null;
+  const campDates = new Set(
+    upcomingCamps
+      .map((c) => new Date(c.date))
+      .filter((d) => d.getFullYear() === year && d.getMonth() === month)
+      .map((d) => d.getDate())
+  );
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days = ["S", "M", "T", "W", "T", "F", "S"];
+
+  const cells = Array.from({ length: 42 }, (_, i) => {
+    const d = i - firstDay + 1;
+    return d > 0 && d <= daysInMonth ? d : null;
   });
-  const highlighted = [8, 20];
+
   return (
     <div className="mt-2">
+      <p className="text-[9px] text-gray-400 font-medium mb-1 text-center">
+        {now.toLocaleString("default", { month: "short", year: "numeric" })}
+      </p>
       <div className="grid grid-cols-7 gap-0.5 mb-1">
-        {days.map((d) => (
-          <span key={d} className="text-[9px] text-center text-gray-400 font-medium">{d}</span>
+        {days.map((d, i) => (
+          <span key={i} className="text-[9px] text-center text-gray-400 font-medium">{d}</span>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-0.5">
@@ -81,14 +66,44 @@ function MiniCalendar() {
           <div
             key={i}
             className={`w-5 h-5 flex items-center justify-center rounded text-[9px]
-              ${d === null ? "" : highlighted.includes(d)
-                ? "bg-blue-500 text-white font-bold"
-                : "text-gray-400"}`}
+              ${d === null ? "" :
+                d === now.getDate() ? "bg-gray-800 text-white font-bold" :
+                campDates.has(d) ? "bg-blue-500 text-white font-bold" :
+                "text-gray-400"}`}
           >
             {d || ""}
           </div>
         ))}
       </div>
+      {campDates.size > 0 && (
+        <p className="text-[8px] text-blue-500 mt-1 text-center">
+          🔵 = camp day
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ── Simple bar chart built from real per-camp data ────────── */
+function BarChart({ reports = [] }) {
+  if (reports.length === 0) {
+    return <p className="text-[10px] text-gray-400 mt-3">No data yet</p>;
+  }
+  const last4 = reports.slice(-4);
+  const maxVal = Math.max(...last4.map((r) => r.minorCases || 0), 1);
+  return (
+    <div className="flex items-end gap-1.5 mt-2">
+      {last4.map((r, i) => {
+        const h = Math.max(((r.minorCases || 0) / maxVal) * 42, 4);
+        return (
+          <div key={i} className="flex flex-col items-center gap-0.5">
+            <div className="w-4 rounded-t-sm bg-blue-500" style={{ height: h + "px" }} />
+            <span className="text-[8px] text-gray-400 max-w-[28px] truncate text-center">
+              {r.campName?.split(" ")[0] || `C${i + 1}`}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -111,9 +126,11 @@ export default function DoctorDashboard() {
 
   const fetchData = async () => {
     try {
-      const up = await API.get("/camps/upcoming");
-      const comp = await API.get("/camps/completed");
-      const rep = await API.get("/reports/my");
+      const [up, comp, rep] = await Promise.all([
+        API.get("/camps/upcoming"),
+        API.get("/camps/completed"),
+        API.get("/reports/my"),
+      ]);
       setUpcoming(up.data.data || []);
       setCompleted(comp.data.data || []);
       setReports(rep.data.data || []);
@@ -138,10 +155,19 @@ export default function DoctorDashboard() {
     }
   };
 
-  /* ── dummy stats ── */
-  const DUMMY = { totalCamps: 1, totalPatients: 128, majorCases: 14, minorCases: 114 };
+  /* ── Derive real stats from fetched data ── */
+  // Set of camp IDs that already have a report submitted
+  const reportedCampIds = new Set(
+    reports.map((r) => r.camp?._id || r.camp).filter(Boolean).map(String)
+  );
 
-  /* ── split upcoming: first = featured, rest = sidebar ── */
+  const stats = {
+    totalCamps: upcoming.length + completed.length,
+    totalPatients: reports.reduce((s, r) => s + (r.totalPeople || 0), 0),
+    majorCases: reports.reduce((s, r) => s + (r.majorCases || 0), 0),
+    minorCases: reports.reduce((s, r) => s + (r.minorCases || 0), 0),
+  };
+
   const [featuredCamp, ...restUpcoming] = upcoming;
 
   return (
@@ -161,39 +187,38 @@ export default function DoctorDashboard() {
           {/* Total Camps */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <p className="text-sm text-gray-500 font-medium">Total Camps</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{DUMMY.totalCamps}</p>
-            <MiniCalendar />
+            <p className="text-3xl font-bold text-gray-800 mt-1">{stats.totalCamps}</p>
+            <MiniCalendar upcomingCamps={upcoming} />
           </div>
 
           {/* Total Patients */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <p className="text-sm text-gray-500 font-medium">Total Patients Checked</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{DUMMY.totalPatients}</p>
+            <p className="text-3xl font-bold text-gray-800 mt-1">{stats.totalPatients}</p>
             <div className="mt-4 flex items-center justify-center">
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
                 <Users className="w-6 h-6 text-gray-400" />
               </div>
             </div>
+            <p className="text-[10px] text-gray-400 mt-2 text-center">
+              across {reports.length} completed camp{reports.length !== 1 ? "s" : ""}
+            </p>
           </div>
 
           {/* Major Cases */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <p className="text-sm text-gray-500 font-medium">Major Cases</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{DUMMY.majorCases}</p>
+            <p className="text-3xl font-bold text-gray-800 mt-1">{stats.majorCases}</p>
             <div className="mt-3 flex items-center gap-3">
-              <DonutChart major={DUMMY.majorCases} minor={DUMMY.minorCases} />
+              <DonutChart major={stats.majorCases} minor={stats.minorCases} />
               <div className="space-y-1 text-[11px] text-gray-500">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-                  Severity
+                  Minor
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block" />
                   Major
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
-                  Low
                 </div>
               </div>
             </div>
@@ -202,9 +227,9 @@ export default function DoctorDashboard() {
           {/* Minor Cases */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <p className="text-sm text-gray-500 font-medium">Minor Cases</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{DUMMY.minorCases}</p>
-            <div className="mt-3 flex items-end justify-center">
-              <BarChart />
+            <p className="text-3xl font-bold text-gray-800 mt-1">{stats.minorCases}</p>
+            <div className="mt-1 flex items-end justify-center">
+              <BarChart reports={reports} />
             </div>
           </div>
         </div>
@@ -228,7 +253,7 @@ export default function DoctorDashboard() {
                       {featuredCamp.nameOfCamp}
                     </h3>
                     <span className="px-2.5 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold border border-green-200 whitespace-nowrap">
-                      Status
+                      Upcoming
                     </span>
                   </div>
 
@@ -244,6 +269,11 @@ export default function DoctorDashboard() {
                     {new Date(featuredCamp.date).toLocaleTimeString("en-US", {
                       hour: "2-digit", minute: "2-digit",
                     })}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <MapPin className="w-4 h-4 text-red-400" />
+                    {featuredCamp.location}
                   </div>
 
                   {featuredCamp.medicines?.length > 0 && (
@@ -274,6 +304,12 @@ export default function DoctorDashboard() {
                       <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-red-400" />
                         {camp.location}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                        <CalendarDays className="w-3 h-3 text-gray-300" />
+                        {new Date(camp.date).toLocaleDateString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                        })}
                       </p>
                     </div>
                   ))}
@@ -310,16 +346,20 @@ export default function DoctorDashboard() {
                     </tr>
                   ) : (
                     completed.map((camp) => {
-                      const rep = reports.find((r) => r.camp?._id === camp._id);
+                      const rep = reports.find(
+                        (r) => String(r.camp?._id || r.camp) === String(camp._id)
+                      );
+                      const hasReport = Boolean(rep);
+
                       return (
                         <tr key={camp._id}
                           className="border-b border-gray-100 last:border-0 hover:bg-gray-50/60 transition-colors">
                           <td className="px-5 py-4 font-medium text-gray-800">{camp.nameOfCamp}</td>
                           <td className="px-5 py-4 text-gray-500">{camp.location}</td>
                           <td className="px-5 py-4 text-gray-500">
-                            {new Date(camp.date).toLocaleDateString("en-GB").replace(/\//g, "/")}
+                            {new Date(camp.date).toLocaleDateString("en-GB")}
                           </td>
-                          <td className="px-5 py-4 text-gray-700">{rep?.totalPeople ?? 0}</td>
+                          <td className="px-5 py-4 text-gray-700">{rep?.totalPeople ?? "—"}</td>
                           <td className="px-5 py-4 text-gray-700">
                             {rep ? `${rep.majorCases}/${rep.minorCases}` : "—"}
                           </td>
@@ -329,12 +369,23 @@ export default function DoctorDashboard() {
                             ) : "—"}
                           </td>
                           <td className="px-5 py-4">
-                            <button
-                              onClick={() => setSelectedCamp(camp)}
-                              className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold transition-colors"
-                            >
-                              Send Report
-                            </button>
+                            {hasReport ? (
+                              /* Report already submitted — show a View button instead */
+                              <button
+                                onClick={() => setViewReport(rep)}
+                                className="px-4 py-2 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 text-xs font-semibold transition-colors border border-green-200"
+                              >
+                                View Report
+                              </button>
+                            ) : (
+                              /* No report yet — show Send Report */
+                              <button
+                                onClick={() => setSelectedCamp(camp)}
+                                className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold transition-colors"
+                              >
+                                Send Report
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -417,7 +468,7 @@ export default function DoctorDashboard() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-start justify-between">
-              <h2 className="text-base font-bold text-gray-800">{viewReport.camp?.nameOfCamp}</h2>
+              <h2 className="text-base font-bold text-gray-800">{viewReport.campName || viewReport.camp?.nameOfCamp}</h2>
               <button onClick={() => setViewReport(null)}
                 className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                 <X className="w-4 h-4 text-gray-500" />

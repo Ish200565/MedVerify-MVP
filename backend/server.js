@@ -24,6 +24,7 @@ app.use("/api/stocks",stockRoutes);
 app.use("/api/camps",campRoutes);
 app.use("/api/reports",reportRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/chatbot", require("./routes/chatbot.route"));
 app.get("/",(req,res)=>{
   res.send("MedVerify API Running");
 });

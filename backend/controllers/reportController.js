@@ -114,3 +114,23 @@ exports.getMyReports = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+exports.getReportsByCamp = async (req, res) => {
+  try {
+    const { campId } = req.params;
+
+    const reports = await Report.find({ camp: campId })
+      .populate("doctor")
+      .populate("camp")
+       .populate("medicinesDistributed.medicine", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: reports,
+    });
+
+  } catch (error) {
+    console.error("GET REPORTS BY CAMP ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
