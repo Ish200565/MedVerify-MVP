@@ -1,55 +1,28 @@
-// models/Camp.js
 const mongoose = require("mongoose");
-
 const campMedicineSchema = new mongoose.Schema({
   medicine: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Medicine",
-    required: true
+    ref: "Medicine"
   },
-  quantity: {
-    type: Number,
-    required: true
-  }
+  quantity: Number,
+
+
+  purpose: String 
 });
 
 const campSchema = new mongoose.Schema({
-  nameOfCamp: {
-    type: String,
-    required: true
-  },
-
-  date: {
-    type: Date,
-    required: true
-  },
-
-  location: {
-    type: String,
-    required: true
-  },
+  nameOfCamp: String,
+  date: Date,
+  location: String,
 
   doctorAssigned: {
-    name: {
-      type: String,
-      required: true
-    },
-    email: {
-      type: String,
-      required: true
-    }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Doctor"
   },
 
-  medicines: {
-    type: [campMedicineSchema],
-    required: true,
-    validate: v => v.length > 0
-  },
+  medicines: [campMedicineSchema],
 
-  description: {
-    type: String,
-    default: ""
-  },
+  description: String,
 
   status: {
     type: String,
@@ -58,7 +31,5 @@ const campSchema = new mongoose.Schema({
   }
 
 }, { timestamps: true });
-
-
 
 module.exports = mongoose.model("Camp", campSchema);

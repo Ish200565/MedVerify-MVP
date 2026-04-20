@@ -1,8 +1,10 @@
-import Camp from "../models/Camp.js";
-import { sendEmail } from "../utils/sendEmail.js";
-import Stock from "../models/Stock.js";
-import mongoose from "mongoose";
-export const addCamp = async (req, res) => {
+const Camp = require("../models/Camp");
+const Stock = require("../models/Stock");
+const Doctor = require("../models/Doctor");
+const mongoose = require("mongoose");
+const { sendEmail } = require("../utils/sendEmail");
+
+exports.addCamp = async (req, res) => {
   try {
     const {
       nameOfCamp,
@@ -13,34 +15,37 @@ export const addCamp = async (req, res) => {
       description
     } = req.body;
 
-    // ✅ Validate medicines array
     if (!Array.isArray(medicines) || medicines.length === 0) {
       return res.status(400).json({
         message: "Medicines are required"
       });
     }
 
-    // ✅ Validate stock for each medicine
-    for (let item of medicines) {
+    if (!mongoose.Types.ObjectId.isValid(doctorAssigned)) {
+      return res.status(400).json({
+        message: "Invalid doctor ID"
+      });
+    }
 
-      // ✅ Check valid ObjectId
+    const doctor = await Doctor.findById(doctorAssigned);
+    if (!doctor) {
+      return res.status(404).json({
+        message: "Assigned doctor not found"
+      });
+    }
+
+    for (const item of medicines) {
       if (!mongoose.Types.ObjectId.isValid(item.medicine)) {
         return res.status(400).json({
           message: `Invalid medicine ID: ${item.medicine}`
         });
       }
 
-      // ✅ Fetch all stock entries for that medicine
       const stocks = await Stock.find({
         medicine: new mongoose.Types.ObjectId(item.medicine)
       });
 
-      console.log("Matching stocks:", stocks); // 🔥 debug
-
-      // ✅ Calculate total available stock
-      const available = stocks.reduce((sum, s) => sum + s.quantity, 0);
-
-      console.log(`Stock for ${item.medicine}: ${available}`);
+      const available = stocks.reduce((sum, stock) => sum + stock.quantity, 0);
 
       if (available < item.quantity) {
         return res.status(400).json({
@@ -49,54 +54,46 @@ export const addCamp = async (req, res) => {
       }
     }
 
-    // ✅ Create camp
     const newCamp = new Camp({
       nameOfCamp,
       date,
       location,
-      doctorAssigned,
+      doctorAssigned: doctor._id,
       medicines,
       description
     });
 
     await newCamp.save();
 
-    // ✅ Send Email (non-blocking)
     const message = `
-Hello Dr. ${doctorAssigned.name},
+Hello Dr. ${doctor.name},
 
 You have been assigned to a medical camp.
 
-📌 Camp: ${nameOfCamp}
-📅 Date: ${date}
-📍 Location: ${location}
+Camp: ${nameOfCamp}
+Date: ${date}
+Location: ${location}
 
 Please be available on time.
 
-Regards,  
+Regards,
 MedVerify Team
     `;
 
-    sendEmail(
-      doctorAssigned.email,
-      "New Camp Assignment",
-      message
-    );
+    sendEmail(doctor.email, "New Camp Assignment", message);
 
-    // ✅ Response
     res.status(201).json({
       success: true,
-      message: "Camp created & doctor notified",
+      message: "Camp created and doctor notified",
       data: newCamp
     });
-
   } catch (error) {
     console.error("ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-export const getUpcoming_Camps = async (req, res) => {
+exports.getUpcoming_Camps = async (req, res) => {
   try {
     const today = new Date();
 
@@ -104,20 +101,20 @@ export const getUpcoming_Camps = async (req, res) => {
       date: { $gte: today },
       status: "upcoming"
     })
-      .populate("medicines.medicine") // 🔥 important
+      .populate("doctorAssigned", "name email")
+      .populate("medicines.medicine")
       .sort({ date: 1 });
 
     res.status(200).json({
       success: true,
       data: camps
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const deleteCamp = async (req, res) => {
+exports.deleteCamp = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -131,16 +128,17 @@ export const deleteCamp = async (req, res) => {
       success: true,
       message: "Camp deleted successfully"
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-export const getCompletedCamps = async (req, res) => {
+
+exports.getCompletedCamps = async (req, res) => {
   try {
     const camps = await Camp.find({
       status: "completed"
     })
+      .populate("doctorAssigned", "name email")
       .populate("medicines.medicine")
       .sort({ date: -1 });
 
@@ -148,7 +146,6 @@ export const getCompletedCamps = async (req, res) => {
       success: true,
       data: camps
     });
-
   } catch (error) {
     console.error("ERROR:", error);
     res.status(500).json({ error: error.message });

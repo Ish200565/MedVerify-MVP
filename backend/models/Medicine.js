@@ -1,32 +1,21 @@
 const mongoose = require("mongoose");
-
 const medicineSchema = new mongoose.Schema({
-
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
+  name: { type: String, required: true },
 
   type: {
     type: String,
-    enum: ["Tablet", "Syrup", "Capsule", "Injection", "Ointment"],
-    required: true
+    enum: ["Tablet", "Syrup", "Capsule", "Injection", "Ointment"]
   },
 
-  manufacturer: {
-    type: String,
-    required: true
-  },
+  manufacturer: String,
 
-  barcode: {
-    type: String,
-    unique: true,
-    sparse: true
-  },
+ 
+  uses: [String],         
+  category: String,        
+  description: String,
 
+  
 
-  // For future AI/OCR improvements
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "NGO"

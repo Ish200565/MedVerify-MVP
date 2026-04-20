@@ -1,14 +1,17 @@
 const Stock = require('../models/Stock');
-
+const Medicine = require("../models/Medicine");
 exports.addStock = async (req, res) => {
   try {
+    const ngoId = req.user.ngo;
+
     const {
       medicineId,
       unitType,
       packSize,
       quantity,
       batchNumber,
-      expiryDate
+      expiryDate,
+      barcode   // ✅ ADD THIS
     } = req.body;
 
     const stock = new Stock({
@@ -17,7 +20,9 @@ exports.addStock = async (req, res) => {
       packSize,
       quantity,
       batchNumber,
-      expiryDate
+      expiryDate,
+      barcode,          // ✅ SAVE IT
+      addedBy: ngoId    // ✅ ALSO IMPORTANT
     });
 
     await stock.save();
@@ -57,6 +62,29 @@ exports.getInventory = async (req, res) => {
       }));
 
     res.json(formatted);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getStockByBarcode = async (req, res) => {
+  try {
+    const ngoId = req.user.ngo;
+
+    const stock = await Stock.findOne({
+      barcode: req.params.barcode,
+      addedBy: ngoId
+    }).populate("medicine");
+
+    if (!stock) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    res.json({
+      medicine: stock.medicine,
+      stock
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message });

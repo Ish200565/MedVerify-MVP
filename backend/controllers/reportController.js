@@ -1,6 +1,7 @@
 // controllers/reportController.js
 const Report = require("../models/Report");
 const Camp = require("../models/Camp");
+const Stock = require("../models/Stock");
 const mongoose = require("mongoose");   
 
 exports.addReport = async (req, res) => {
@@ -27,7 +28,7 @@ exports.addReport = async (req, res) => {
     }
 
     // ✅ Fetch camp
-    const camp = await Camp.findById(campId);
+    const camp = await Camp.findById(campId).populate("doctorAssigned", "name");
 
     if (!camp) {
       return res.status(404).json({ message: "Camp not found" });
@@ -55,8 +56,7 @@ exports.addReport = async (req, res) => {
       // snapshot fields
       campName: camp.nameOfCamp,
       location: camp.location,
-      doctorAssigned: camp.doctorAssigned.name,
-      campDescription: camp.description,
+      doctor: camp.doctorAssigned?._id,
 
       totalPeople,
       minorCases,
@@ -73,12 +73,12 @@ exports.addReport = async (req, res) => {
     // ✅ Mark camp completed
     camp.status = "completed";
     await camp.save();
-    for (let item of medicinesDistributed) {
-  await Stock.updateMany(
-    { medicine: item.medicine },
-    { $inc: { quantity: -item.quantity } }
-  );
-}
+    for (const item of medicinesDistributed || []) {
+      await Stock.updateMany(
+        { medicine: item.medicine },
+        { $inc: { quantity: -item.quantity } }
+      );
+    }
     // ✅ Populate medicine details
     const populatedReport = await Report.findById(newReport._id)
       .populate({
@@ -98,3 +98,19 @@ exports.addReport = async (req, res) => {
   }
 };
 
+exports.getMyReports = async (req, res) => {
+  try {
+    const reports = await Report.find({ doctor: req.user._id })
+      .populate("camp")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: reports,
+    });
+
+  } catch (error) {
+    console.error("GET MY REPORTS ERROR:", error);
+    res.status(500).json({ message: error.message });
+  }
+};

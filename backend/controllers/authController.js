@@ -10,26 +10,28 @@ const generateToken = (id,role)=>{
 
 };
 
-exports.registerNgo = async (req,res)=>{
+exports.registerNgo = async (req, res) => {
+  try {
+    const { email } = req.body;
 
-  try{
+    const exists = await NGO.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "NGO already exists" });
+    }
 
     const ngo = await NGO.create(req.body);
 
-    const token = generateToken(ngo._id,"ngo");
+    const token = generateToken(ngo._id, "ngo");
 
     res.json({
-      success:true,
-      data:ngo,
+      success: true,
+      data: ngo,
       token
     });
 
-  }catch(err){
-
-    res.status(500).json({message:err.message});
-
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
 };
 
 exports.loginNgo = async (req,res)=>{
@@ -50,29 +52,33 @@ exports.loginNgo = async (req,res)=>{
 
 };
 
-exports.registerDoctor = async (req,res)=>{
+exports.registerDoctor = async (req, res) => {
+  try {
+    const { ngoKey, email } = req.body;
 
-  try{
+    const ngo = await NGO.findOne({ ngoKey });
 
-    const ngo = await NGO.findOne({ngoKey:req.body.ngoKey});
+    if (!ngo) {
+      return res.status(400).json({ message: "Invalid NGO key" });
+    }
 
-    if(!ngo){
-      return res.status(400).json({message:"Invalid NGO key"});
+    const exists = await Doctor.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "Doctor already exists" });
     }
 
     const doctor = await Doctor.create({
       ...req.body,
-      ngo:ngo._id
+      ngo: ngo._id
     });
 
-    const token = generateToken(doctor._id,"doctor");
+    const token = generateToken(doctor._id, "doctor");
 
-    res.json({success:true,data:doctor,token});
+    res.json({ success: true, data: doctor, token });
 
-  }catch(err){
-    res.status(500).json({message:err.message});
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-
 };
 
 exports.loginDoctor = async (req,res)=>{
@@ -93,29 +99,53 @@ exports.loginDoctor = async (req,res)=>{
 
 };
 
-exports.getMe = async (req,res)=>{
+exports.getMe = async (req, res) => {
+  try {
+    let user;
 
-  res.json({success:true,data:req.user});
+    if (req.user.role === "ngo") {
+      user = await NGO.findById(req.user._id);
+    } else {
+      user = await Doctor.findById(req.user._id)
+        .populate("ngo", "ngoName email");
+    }
 
+    res.json({
+      success: true,
+      data: user
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.getDoctors = async (req, res) => {
-   try {
-    
-    const doctors = await Doctor.find()
-      .populate("ngo", "name email"); // optional: populate NGO details
+  try {
+    console.log("USER:", req.user); // 👈 ADD THIS
 
-    res.status(200).json({
+    const ngoId = req.user?.ngo;
+
+    if (!ngoId) {
+      return res.status(400).json({
+        message: "NGO ID missing in token"
+      });
+    }
+
+    const doctors = await Doctor.find({
+      ngo: ngoId
+    }).select("-password");
+
+    res.json({
       success: true,
       count: doctors.length,
       data: doctors
     });
 
   } catch (error) {
+    console.error(error); // 👈 ALSO ADD
     res.status(500).json({
-      success: false,
-      message: "Error fetching doctors",
-      error: error.message
+      message: error.message
     });
   }
 };

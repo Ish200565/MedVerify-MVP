@@ -1,34 +1,22 @@
-// models/Report.js
-
 const mongoose = require("mongoose");
-
 const reportSchema = new mongoose.Schema({
   camp: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Camp",
-    required: true
+    ref: "Camp"
   },
 
-  // Snapshot fields (so report stays fixed even if camp changes)
+  doctor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Doctor"
+  },
+
+  // Snapshot
   campName: String,
   location: String,
-  doctorAssigned: String,
-  campDescription: String,
 
-  totalPeople: {
-    type: Number,
-    required: true
-  },
-
-  minorCases: {
-    type: Number,
-    required: true
-  },
-
-  majorCases: {
-    type: Number,
-    required: true
-  },
+  totalPeople: Number,
+  minorCases: Number,
+  majorCases: Number,
 
   medicinesDistributed: [
     {
@@ -40,20 +28,19 @@ const reportSchema = new mongoose.Schema({
     }
   ],
 
+  // 🧠 Doctor input
   doctorReport: {
     type: String,
-    required: true,
-    minlength: 10,
-    maxlength: 500
+    required: true
   },
 
-  doctorScore: {
-    type: Number // from ML microservice (0–1)
-  },
+  // 🔥 AI GENERATED FIELDS
+  commonDiseases: [String],       // ["fever", "infection"]
+  recommendations: String,        // "Increase ORS stock"
+  alerts: [String],               // ["ORS shortage"]
 
-  successRate: {
-    type: Number // final percentage
-  }
+  doctorScore: Number,
+  successRate: Number
 
 }, { timestamps: true });
 

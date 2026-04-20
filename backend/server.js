@@ -10,6 +10,8 @@ const medicineRoutes = require("./routes/medicineRoutes");
 const stockRoutes = require("./routes/stockRoutes");
 const campRoutes = require("./routes/campRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const aiRoutes = require("./routes/aiRoutes");
+
 const app = express();
 
 connectDB();
@@ -21,6 +23,7 @@ app.use("/api/medicines",medicineRoutes);
 app.use("/api/stocks",stockRoutes);
 app.use("/api/camps",campRoutes);
 app.use("/api/reports",reportRoutes);
+app.use("/api/ai", aiRoutes);
 app.get("/",(req,res)=>{
   res.send("MedVerify API Running");
 });

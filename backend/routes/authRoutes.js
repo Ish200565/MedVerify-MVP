@@ -9,11 +9,11 @@ loginDoctor,
 getMe,getDoctors
 } = require("../controllers/authController");
 
-const { protect } = require("../middleware/authMiddleware");
 
 router.post("/ngo/register",registerNgo);
 router.post("/ngo/login",loginNgo);
-router.get("/ngo/doctors",getDoctors);
+const { protect, isNGO } = require("../middleware/authMiddleware");
+router.get("/ngo/doctors", protect, isNGO, getDoctors);
 router.post("/doctor/register",registerDoctor);
 router.post("/doctor/login",loginDoctor);
 

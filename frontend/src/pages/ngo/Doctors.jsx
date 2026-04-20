@@ -21,7 +21,7 @@ export default function NgoDoctors() {
   /* ---------------- FETCH DOCTORS ---------------- */
   const fetchDoctors = async () => {
     try {
-      const res = await API.get(`auth/ngo/doctors`);
+      const res = await API.get(`/auth/ngo/doctors`);
       setDoctors(res.data.data);
     } catch (err) {
       console.error(err);

@@ -1,20 +1,21 @@
-
 const express = require("express");
 const router = express.Router();
 
 const {
-  getMedicineByBarcode,
-  createMedicine,getMedicine,
+  createMedicine,
+  getMedicine,
   deleteMedicine
 } = require("../controllers/medicineController");
 
 
-router.get("/barcode/:barcode", getMedicineByBarcode);
+const { protect, isNGO } = require("../middleware/authMiddleware");
 
+// ✅ NGO only
+router.post("/", protect, isNGO, createMedicine);
 
-router.post("/", createMedicine);
-router.get("/getmedicine", getMedicine);
+router.get("/", protect, getMedicine);
 
-router.delete("/:id", deleteMedicine);
+// ✅ NGO only
+router.delete("/:id", protect, isNGO, deleteMedicine);
 
 module.exports = router;

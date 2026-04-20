@@ -1,62 +1,85 @@
 const Medicine = require("../models/Medicine");
 
-exports.getMedicineByBarcode = async (req, res) => {
-  try {
-    const { barcode } = req.params;
 
-    const medicine = await Medicine.findOne({ barcode });
-
-    if (!medicine) {
-      return res.status(404).json({ message: "Medicine not found" });
-    }
-
-    res.json(medicine);
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
+// ✅ CREATE MEDICINE (NGO scoped)
 exports.createMedicine = async (req, res) => {
   try {
-    const { name, type, manufacturer, barcode } = req.body;
+    const ngoId = req.user.ngo;
 
-    const existing = await Medicine.findOne({ barcode });
+    const { name, type, manufacturer } = req.body;
+
+    const existing = await Medicine.findOne({
+      name,
+      createdBy: ngoId   // 🔥 IMPORTANT
+    });
 
     if (existing) {
-      return res.status(400).json({ message: "Medicine already exists" });
+      return res.status(400).json({
+        message: "Medicine already exists"
+      });
     }
 
-    const medicine = new Medicine({
+    const medicine = await Medicine.create({
       name,
       type,
       manufacturer,
-      barcode
+      createdBy: ngoId   // ✅ LINK TO NGO
     });
 
-    await medicine.save();
-
-    res.status(201).json(medicine);
+    res.status(201).json({
+      success: true,
+      data: medicine
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+
+// ✅ GET ALL MEDICINES (ONLY THIS NGO)
+exports.getMedicine = async (req, res) => {
+  try {
+    const ngoId = req.user.ngo;
+
+    const medicines = await Medicine.find({
+      createdBy: ngoId   // 🔥 FILTER
+    });
+
+    res.json({
+      success: true,
+      count: medicines.length,
+      data: medicines
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// ✅ DELETE MEDICINE (SAFE)
 exports.deleteMedicine = async (req, res) => {
   try {
-    await Medicine.findByIdAndDelete(req.params.id);
-    res.json({ message: "Medicine deleted" });
+    const ngoId = req.user.ngo;
+
+    const medicine = await Medicine.findOneAndDelete({
+      _id: req.params.id,
+      createdBy: ngoId   // 🔥 SECURITY
+    });
+
+    if (!medicine) {
+      return res.status(404).json({
+        message: "Medicine not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Medicine deleted"
+    });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
-
-exports.getMedicine= async (req, res) => {
-  try {
-    const medicines = await Medicine.find();  
-    res.json(medicines);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  } 
 };

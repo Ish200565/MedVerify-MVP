@@ -13,7 +13,6 @@ import {
   CardTitle,
 } from "../../components/ui/card";
 import { Label } from "../../components/ui/label";
-import Logout from "../../components/layout/Logout";
 
 export default function AddCamp() {
   const [open, setOpen] = useState(false);
@@ -27,49 +26,33 @@ export default function AddCamp() {
     date: "",
     location: "",
     description: "",
-    doctorAssigned: {
-      name: "",
-      email: "",
-    },
+    doctorAssigned: "", // ✅ FIXED
   });
 
   const [medicines, setMedicines] = useState([
     { medicine: "", quantity: "" },
   ]);
 
-  /* ================= FETCH DATA ================= */
+  /* ================= FETCH ================= */
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const medRes = await API.get("/medicines/getmedicine");
+      const medRes = await API.get("/medicines");
       const docRes = await API.get("/auth/ngo/doctors");
 
-      console.log("MED:", medRes.data);
-      console.log("DOC:", docRes.data);
-
-      // ✅ SAFE ARRAY EXTRACTION
-      const meds = Array.isArray(medRes.data)
-        ? medRes.data
-        : medRes.data?.data || medRes.data?.medicines || [];
-
-      const docs = Array.isArray(docRes.data)
-        ? docRes.data
-        : docRes.data?.data || docRes.data?.doctors || [];
-
-      setAllMedicines(meds);
-      setAllDoctors(docs);
+      // ✅ backend format: { success, data }
+      setAllMedicines(medRes.data.data || []);
+      setAllDoctors(docRes.data.data || []);
 
     } catch (err) {
       console.error(err);
-      setAllMedicines([]);
-      setAllDoctors([]);
     }
   };
 
-  /* ================= MEDICINE HANDLING ================= */
+  /* ================= MEDICINE ================= */
   const addMedicineField = () => {
     setMedicines([...medicines, { medicine: "", quantity: "" }]);
   };
@@ -87,37 +70,49 @@ export default function AddCamp() {
     try {
       const payload = {
         ...camp,
-        medicines,
+        medicines: medicines.map((m) => ({
+          medicine: m.medicine,
+          quantity: Number(m.quantity),
+        })),
       };
 
       console.log("FINAL PAYLOAD:", payload);
 
-      await API.post("/camps/add", payload);
+      await API.post("/camps", payload);
 
       setMessage("Camp created successfully 🎉");
 
+      // RESET
+      setCamp({
+        nameOfCamp: "",
+        date: "",
+        location: "",
+        description: "",
+        doctorAssigned: "",
+      });
+
+      setMedicines([{ medicine: "", quantity: "" }]);
+
     } catch (err) {
       console.error(err.response?.data || err.message);
-      setMessage("Error occurred ❌");
+      setMessage(err.response?.data?.message || "Error ❌");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
+    <div className="min-h-screen bg-gray-100">
 
-      {/* SIDEBAR */}
       <Sidebar open={open} setOpen={setOpen} />
 
       {/* TOPBAR */}
-      <div className="flex items-center gap-3 px-6 py-4 bg-white border-b shadow-sm">
-        <Menu onClick={() => setOpen(true)} className="cursor-pointer" />
+      <div className="flex items-center gap-3 px-6 py-4 bg-white shadow">
+        <Menu onClick={() => setOpen(true)} />
         <h2 className="text-lg font-semibold">Add Camp</h2>
       </div>
- <Logout/>
-      {/* CONTENT */}
+
       <div className="p-6">
 
-        <Card className="max-w-3xl mx-auto shadow-lg border">
+        <Card className="max-w-3xl mx-auto shadow-lg rounded-2xl">
           <CardHeader>
             <CardTitle className="text-green-600 text-xl">
               Create Medical Camp
@@ -126,7 +121,6 @@ export default function AddCamp() {
 
           <CardContent className="space-y-6">
 
-            {/* MESSAGE */}
             {message && (
               <div className="p-3 bg-green-100 text-green-700 rounded">
                 {message}
@@ -136,15 +130,10 @@ export default function AddCamp() {
             {/* CAMP DETAILS */}
             <div className="grid grid-cols-2 gap-6">
 
-              <div className="space-y-2">
-                <Label>Camp Name</Label>
-                <Input
-                  value={camp.nameOfCamp}
-                  onChange={(e) =>
-                    setCamp({ ...camp, nameOfCamp: e.target.value })
-                  }
-                />
-              </div>
+              <InputField label="Camp Name"
+                value={camp.nameOfCamp}
+                onChange={(v) => setCamp({ ...camp, nameOfCamp: v })}
+              />
 
               <div className="space-y-2">
                 <Label>Date</Label>
@@ -157,58 +146,40 @@ export default function AddCamp() {
                 />
               </div>
 
-              <div className="space-y-2 col-span-2">
-                <Label>Location</Label>
-                <Input
+              <div className="col-span-2">
+                <InputField label="Location"
                   value={camp.location}
-                  onChange={(e) =>
-                    setCamp({ ...camp, location: e.target.value })
-                  }
+                  onChange={(v) => setCamp({ ...camp, location: v })}
                 />
               </div>
 
-              <div className="space-y-2 col-span-2">
-                <Label>Description</Label>
-                <Input
+              <div className="col-span-2">
+                <InputField label="Description"
                   value={camp.description}
-                  onChange={(e) =>
-                    setCamp({ ...camp, description: e.target.value })
-                  }
+                  onChange={(v) => setCamp({ ...camp, description: v })}
                 />
               </div>
 
             </div>
 
-            {/* DOCTOR DROPDOWN */}
+            {/* DOCTOR */}
             <div className="space-y-2">
               <Label>Assign Doctor</Label>
 
               <select
                 className="w-full border rounded p-2"
-                onChange={(e) => {
-                  const selected = allDoctors.find(
-                    (d) => d._id === e.target.value
-                  );
-
-                  if (!selected) return;
-
-                  setCamp({
-                    ...camp,
-                    doctorAssigned: {
-                      name: selected.name,
-                      email: selected.email,
-                    },
-                  });
-                }}
+                value={camp.doctorAssigned}
+                onChange={(e) =>
+                  setCamp({ ...camp, doctorAssigned: e.target.value })
+                }
               >
                 <option value="">Select Doctor</option>
 
-                {Array.isArray(allDoctors) &&
-                  allDoctors.map((doc) => (
-                    <option key={doc._id} value={doc._id}>
-                      {doc.name} ({doc.email})
-                    </option>
-                  ))}
+                {allDoctors.map((doc) => (
+                  <option key={doc._id} value={doc._id}>
+                    {doc.name} ({doc.email})
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -228,12 +199,11 @@ export default function AddCamp() {
                   >
                     <option value="">Select Medicine</option>
 
-                    {Array.isArray(allMedicines) &&
-                      allMedicines.map((med) => (
-                        <option key={med._id} value={med._id}>
-                          {med.name}
-                        </option>
-                      ))}
+                    {allMedicines.map((med) => (
+                      <option key={med._id} value={med._id}>
+                        {med.name}
+                      </option>
+                    ))}
                   </select>
 
                   <Input
@@ -265,6 +235,15 @@ export default function AddCamp() {
         </Card>
       </div>
     </div>
-   
+  );
+}
+
+/* INPUT FIELD */
+function InputField({ label, value, onChange }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
   );
 }
