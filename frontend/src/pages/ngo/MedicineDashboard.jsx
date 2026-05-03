@@ -150,9 +150,7 @@ export default function MedicineDashboard() {
 
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold text-slate-800">Medicine Inventory</h2>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors">
-                  <Plus className="w-3.5 h-3.5" /> Add
-                </button>
+               
               </div>
 
               {/* FILTER BAR */}

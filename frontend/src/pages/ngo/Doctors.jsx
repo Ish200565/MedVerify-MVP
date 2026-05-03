@@ -91,7 +91,7 @@ export default function NgoDoctors() {
                         <div className="flex items-center gap-1 mt-1">
                           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
                             <Stethoscope className="w-2.5 h-2.5" />
-                            {doc.specialization || "General"}
+                            {doc.specialisation || "General"}
                           </span>
                         </div>
                       </div>

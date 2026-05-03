@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 
-import logo from "../../assets/logoo.png";
+import logo from "../../assets/logoo.PNG";
 
 export default function Signup() {
 
